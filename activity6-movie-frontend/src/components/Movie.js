@@ -1,18 +1,24 @@
-import React from 'react'
-import moviePic from '../assets/st.jpg'
-import { FaStar } from "react-icons/fa";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { FaStar } from 'react-icons/fa';
+import moviePic from '../assets/st.jpg';
 
-function Movie() {
+function Movie({ movie }) {
+  const poster = movie.poster || moviePic;
+
   return (
-    <div className='m-5 border border-[#D1D9E0] bg-[#FAFBFC] cursor-pointer rounded rounded-lg p-3 w-fit flex flex-col items-center'>
-        <img className="w-32 h-48 rounded-lg shadow-lg" src={moviePic} alt="profile-logo" />
-        <div className='flex items-center mt-2 gap-2'>
-            <FaStar />
-            <h3 className='text-sm font-medium mt-1'>8.3</h3>
-        </div>
-        <h3 className='text-sm font-semibold mt-1'>Strange Things (2016)</h3>
-    </div>
-  )
+    <Link
+      to={`/movies/${movie.id}`}
+      className='m-5 border border-[#D1D9E0] bg-[#FAFBFC] cursor-pointer rounded-lg p-3 w-fit flex flex-col items-center hover:shadow-sm'
+    >
+      <img className="w-40 h-48 rounded-lg shadow-lg" src={poster} alt={`${movie.title} poster`} />
+      <div className='flex items-center mt-2 gap-2'>
+        <FaStar className='text-[#f0b90b]' />
+        <h3 className='text-sm font-medium mt-1'>{movie.rating}</h3>
+      </div>
+      <h3 className='text-sm font-semibold mt-1 text-center'>{movie.title}</h3>
+    </Link>
+  );
 }
 
-export default Movie
+export default Movie;
