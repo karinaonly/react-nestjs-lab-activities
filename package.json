@@ -1,5 +1,12 @@
 {
-  "dependencies": {
-    "install": "^0.13.0"
+  "name": "lab-activity-6",
+  "private": true,
+  "scripts": {
+    "frontend": "npm start --prefix activity6-movie-frontend",
+    "backend": "npm run start:dev --prefix activity6-movie-backend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

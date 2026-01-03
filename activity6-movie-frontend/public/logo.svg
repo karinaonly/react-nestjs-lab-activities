@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 350">
+  <!-- Main reel circle -->
+  <circle cx="140" cy="160" r="110" fill="#1a1a1a"/>
+  
+  <!-- White circles (film holes) -->
+  <circle cx="100" cy="120" r="25" fill="white"/>
+  <circle cx="180" cy="120" r="25" fill="white"/>
+  <circle cx="100" cy="200" r="25" fill="white"/>
+  <circle cx="180" cy="200" r="25" fill="white"/>
+  <circle cx="140" cy="160" r="8" fill="white"/>
+  
+  <!-- Film strip -->
+  <g transform="translate(220, 60) rotate(25)">
+    <!-- Main strip -->
+    <rect x="0" y="0" width="60" height="120" fill="#1a1a1a" rx="8"/>
+    
+    <!-- Film perforations -->
+    <rect x="8" y="10" width="44" height="15" fill="white"/>
+    <rect x="8" y="35" width="44" height="15" fill="white"/>
+    <rect x="8" y="60" width="44" height="15" fill="white"/>
+    <rect x="8" y="85" width="44" height="15" fill="white"/>
+  </g>
+</svg>

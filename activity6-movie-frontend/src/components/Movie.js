@@ -4,14 +4,20 @@ import { FaStar } from 'react-icons/fa';
 import moviePic from '../assets/st.jpg';
 
 function Movie({ movie }) {
-  const poster = movie.poster || moviePic;
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+  const poster = movie.movieImage ? `${API_URL}${movie.movieImage}` : moviePic;
 
   return (
     <Link
-      to={`/movies/${movie.id}`}
+      to={`/movies/${movie.movieId}`}
       className='m-5 border border-[#D1D9E0] bg-[#FAFBFC] cursor-pointer rounded-lg p-3 w-fit flex flex-col items-center hover:shadow-sm'
     >
-      <img className="w-40 h-48 rounded-lg shadow-lg" src={poster} alt={`${movie.title} poster`} />
+      <img 
+        className="w-40 h-48 rounded-lg shadow-lg object-cover" 
+        src={poster} 
+        alt={`${movie.title} poster`}
+        loading="lazy"
+      />
       <div className='flex items-center mt-2 gap-2'>
         <FaStar className='text-[#f0b90b]' />
         <h3 className='text-sm font-medium mt-1'>{movie.rating}</h3>
@@ -21,4 +27,4 @@ function Movie({ movie }) {
   );
 }
 
-export default Movie;
+export default React.memo(Movie);
