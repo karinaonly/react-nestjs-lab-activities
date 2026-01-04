@@ -20,7 +20,16 @@ function Movie({ movie }) {
       />
       <div className='flex items-center mt-2 gap-2'>
         <FaStar className='text-[#f0b90b]' />
-        <h3 className='text-sm font-medium mt-1'>{movie.rating}</h3>
+        <h3 className='text-sm font-medium mt-1'>
+          {movie.averageRating > 0 
+            ? movie.averageRating.toFixed(1) 
+            : 'No ratings'}
+        </h3>
+        {movie.totalReviews > 0 && (
+          <span className='text-xs text-gray-500'>
+            ({movie.totalReviews})
+          </span>
+        )}
       </div>
       <h3 className='text-sm font-semibold mt-1 text-center'>{movie.title}</h3>
     </Link>

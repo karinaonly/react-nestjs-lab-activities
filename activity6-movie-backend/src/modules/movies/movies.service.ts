@@ -4,17 +4,46 @@ import { Movie } from './entities/movies';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateMovieDto } from './dto/create.movie.dto';
 import { UpdateMovieDto } from './dto/update.movie.dto';
+import { ReviewsService } from '../reviews/reviews.service';
 
 @Injectable()
 export class MoviesService {
-    constructor(@InjectRepository(Movie) private readonly moviesRepo: Repository<Movie>) {}
+    constructor(
+        @InjectRepository(Movie) private readonly moviesRepo: Repository<Movie>,
+        private readonly reviewsService: ReviewsService,
+    ) {}
 
-    async getAllMovies(){
-        return this.moviesRepo.find();
+    async getAllMovies() {
+        const movies = await this.moviesRepo.find();
+        
+        // Add average rating to each movie
+        const moviesWithRatings = await Promise.all(
+            movies.map(async (movie) => {
+                const ratingData = await this.reviewsService.getAverageRating(movie.movieId);
+                return {
+                    ...movie,
+                    averageRating: ratingData.averageRating,
+                    totalReviews: ratingData.totalReviews,
+                };
+            })
+        );
+        
+        return moviesWithRatings;
     }
 
-    async getMovieById(movieId: number){
-        return this.moviesRepo.findOneBy({movieId});
+    async getMovieById(movieId: number) {
+        const movie = await this.moviesRepo.findOneBy({ movieId });
+        
+        if (movie) {
+            const ratingData = await this.reviewsService.getAverageRating(movieId);
+            return {
+                ...movie,
+                averageRating: ratingData.averageRating,
+                totalReviews: ratingData.totalReviews,
+            };
+        }
+        
+        return movie;
     }
 
     async createMovie(createMovieDto: CreateMovieDto){

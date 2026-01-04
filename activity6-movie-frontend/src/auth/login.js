@@ -6,31 +6,39 @@ import axiosInstance from "../service/axiosInstance";
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setError("");
     setLoading(true);
 
     try {
       const response = await axiosInstance.post("/auth/login", {
-        email,
+        email: emailOrUsername,
         password,
       });
       
-      if (response.data && response.data.token) {
-        login(response.data.token, response.data.user);
+      if (response.data && response.data.access_token) {
+        login(response.data.user, response.data.access_token);
         navigate("/movies");
+      } else {
+        setError("Invalid response from server. Please try again.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Please try again.");
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          "Invalid username/email or password. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
+    
+    return false;
   };
 
   return (
@@ -49,16 +57,16 @@ const Login = () => {
           </h2>
           <hr className=" bg-[#D1D9E0] mb-6" />
 
-          <form className="text-left" onSubmit={handleLogin}>
+          <form className="text-left" onSubmit={handleLogin} noValidate>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Email</label>
+              <label className="block text-sm font-medium mb-2">Username or Email</label>
               <input
-                className="w-full px-3 py-2 border border-[#D1D9E0] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                type="email"
-                id="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-[#D1D9E0] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                type="text"
+                id="emailOrUsername"
+                placeholder="Enter your username or email"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
                 required
               />
             </div>
@@ -76,8 +84,8 @@ const Login = () => {
             </div>
 
             {error && (
-              <div className="flex justify-center bg-red-100 border border-red-400 text-red-600 p-1 rounded-md mb-2">
-                {error}
+              <div className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mb-4 text-sm">
+                <strong>Error:</strong> {error}
               </div>
             )}
             <div className="flex items-center justify-between mb-6">

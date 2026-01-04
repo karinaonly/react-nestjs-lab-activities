@@ -9,7 +9,6 @@ const Signup = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -23,11 +22,11 @@ const Signup = () => {
         email,
         password,
         username,
-        role,
+        role: "user", // Always create as regular user
       });
       
-      if (response.data && response.data.token) {
-        login(response.data.token, response.data.user);
+      if (response.data && response.data.access_token) {
+        login(response.data.user, response.data.access_token);
         navigate("/movies");
       }
     } catch (err) {

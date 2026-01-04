@@ -13,7 +13,13 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    const user = await this.usersRepo.findOne({ where: { email } });
+    // Try to find user by email or username
+    const user = await this.usersRepo.findOne({ 
+      where: [
+        { email },
+        { username: email }
+      ]
+    });
 
     if (!user) {
       throw new Error('User not found');

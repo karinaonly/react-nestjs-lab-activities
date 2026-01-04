@@ -30,3 +30,10 @@
   --text-muted: #848d97;
   --accent-color: #a78bfa; 
 }
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

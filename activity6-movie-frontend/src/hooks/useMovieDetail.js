@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import {
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { moviesService } from '../service/moviesService';
 
+/* ============================
+   MOVIE DETAIL UI LOGIC HOOK
+============================ */
 export const useMovieDetail = () => {
   const [userRating, setUserRating] = useState(4);
   const [userReview, setUserReview] = useState('');
@@ -14,54 +20,45 @@ export const useMovieDetail = () => {
   const handleTabClick = (tab) => {
     setActiveTab(tab);
     const target = tab === 'info' ? infoRef.current : reviewsRef.current;
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handlePrevReview = () => {
-    if (carouselRef.current) {
-      carouselRef.current.scrollBy({ left: -400, behavior: 'smooth' });
-    }
+    carouselRef.current?.scrollBy({ left: -400, behavior: 'smooth' });
   };
 
   const handleNextReview = () => {
-    if (carouselRef.current) {
-      carouselRef.current.scrollBy({ left: 400, behavior: 'smooth' });
-    }
+    carouselRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
   };
 
+  // ⚡ Optimized IntersectionObserver (run ONCE)
   useEffect(() => {
     const infoEl = infoRef.current;
     const reviewsEl = reviewsRef.current;
-    if (!infoEl || !reviewsEl) return undefined;
+    if (!infoEl || !reviewsEl) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
-          .filter((entry) => entry.isIntersecting)
+          .filter(e => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
         if (visible.length > 0) {
           const id = visible[0].target.dataset.section;
-          if (id && id !== activeTab) {
-            setActiveTab(id);
-          }
+          setActiveTab(prev => (prev !== id ? id : prev));
         }
       },
-      {
-        root: null,
-        threshold: [0.25, 0.35, 0.5],
-      }
+      { threshold: [0.25, 0.35, 0.5] }
     );
 
     infoEl.dataset.section = 'info';
     reviewsEl.dataset.section = 'reviews';
+
     observer.observe(infoEl);
     observer.observe(reviewsEl);
 
     return () => observer.disconnect();
-  }, [activeTab]);
+  }, []);
 
   return {
     userRating,
@@ -78,23 +75,50 @@ export const useMovieDetail = () => {
   };
 };
 
+/* ============================
+   ALL MOVIES (LANDING PAGE)
+============================ */
 export const useAllMovies = () => {
   return useQuery({
     queryKey: ['allMovies'],
     queryFn: moviesService.getAllMovies,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10 // 10 minutes (formerly cacheTime)
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 };
 
+/* ============================
+   SINGLE MOVIE (DETAIL PAGE)
+============================ */
 export const useMovieById = (id) => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ['movie', id],
     queryFn: () => moviesService.getMovieById(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10 // 10 minutes (formerly cacheTime)
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+
+    // 🚀 INSTANT PAGE LOAD (cache reuse)
+    initialData: () => {
+      const movies = queryClient.getQueryData(['allMovies']);
+      return movies?.find(movie => movie.id === id);
+    },
   });
 };
 
+/* ============================
+   PREFETCH HELPER (OPTIONAL)
+============================ */
+export const usePrefetchMovie = () => {
+  const queryClient = useQueryClient();
 
+  return (id) => {
+    queryClient.prefetchQuery({
+      queryKey: ['movie', id],
+      queryFn: () => moviesService.getMovieById(id),
+      staleTime: 1000 * 60 * 5,
+    });
+  };
+};

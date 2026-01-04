@@ -7,6 +7,9 @@ function AdminAddMoviePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,7 +19,6 @@ function AdminAddMoviePage() {
     originalLanguage: '',
     releaseDate: new Date().getFullYear(),
     rating: 8.0,
-    movieImage: '',
   });
 
   const handleChange = (e) => {
@@ -27,13 +29,81 @@ function AdminAddMoviePage() {
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    // Check file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+
+    setError('');
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setFieldErrors({});
+
+    // Validate all required fields
+    const errors = {};
+    if (!formData.title.trim()) errors.title = 'Title is required';
+    if (!formData.genre.trim()) errors.genre = 'Genre is required';
+    if (!formData.description.trim()) errors.description = 'Description is required';
+    if (!formData.director.trim()) errors.director = 'Director is required';
+    if (!formData.producer.trim()) errors.producer = 'Producer is required';
+    if (!formData.originalLanguage.trim()) errors.originalLanguage = 'Language is required';
+    if (!formData.releaseDate) errors.releaseDate = 'Release year is required';
+    if (!formData.rating || formData.rating < 0 || formData.rating > 10) {
+      errors.rating = 'Rating must be between 0 and 10';
+    }
+    if (!imageFile) errors.image = 'Movie poster is required';
+
+    // If there are errors, show them and don't submit
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      await axiosInstance.post('/movies/create', formData);
+      const submitData = new FormData();
+      submitData.append('title', formData.title);
+      submitData.append('description', formData.description);
+      submitData.append('genre', formData.genre);
+      submitData.append('director', formData.director);
+      submitData.append('producer', formData.producer);
+      submitData.append('originalLanguage', formData.originalLanguage);
+      submitData.append('releaseDate', formData.releaseDate);
+      submitData.append('rating', formData.rating);
+      submitData.append('image', imageFile);
+
+      await axiosInstance.post('/movies/create', submitData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       alert('Movie added successfully!');
       navigate('/movies');
     } catch (err) {
@@ -57,7 +127,8 @@ function AdminAddMoviePage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-[#D1D9E0] p-8">
-          <h2 className="text-2xl font-semibold mb-6">Add New Movie</h2>
+          <h2 className="text-2xl font-semibold mb-2">Add New Movie</h2>
+          <p className="text-sm text-gray-500 mb-6">Fields marked with <span className="text-red-500">*</span> are required</p>
 
           {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -69,95 +140,115 @@ function AdminAddMoviePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Title *
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="Enter movie title"
+                  className={`w-full border ${fieldErrors.title ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.title && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.title}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Genre *
+                  Genre <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="genre"
                   value={formData.genre}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="e.g., Action, Drama, Comedy"
+                  className={`w-full border ${fieldErrors.genre ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.genre && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.genre}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                Description *
+                Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows="4"
-                className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                required
+                placeholder="Enter movie description or synopsis"
+                className={`w-full border ${fieldErrors.description ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
               />
+              {fieldErrors.description && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.description}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Director *
+                  Director <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="director"
                   value={formData.director}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="Director name"
+                  className={`w-full border ${fieldErrors.director ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.director && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.director}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Producer *
+                  Producer <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="producer"
                   value={formData.producer}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="Producer name"
+                  className={`w-full border ${fieldErrors.producer ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.producer && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.producer}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Release Date *
+                  Release Year <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   name="releaseDate"
                   value={formData.releaseDate}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="2024"
+                  min="1800"
+                  max="2100"
+                  className={`w-full border ${fieldErrors.releaseDate ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.releaseDate && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.releaseDate}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Rating *
+                  Rating (0-10) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -167,39 +258,56 @@ function AdminAddMoviePage() {
                   max="10"
                   value={formData.rating}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="8.5"
+                  className={`w-full border ${fieldErrors.rating ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.rating && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.rating}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Language *
+                  Language <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="originalLanguage"
                   value={formData.originalLanguage}
                   onChange={handleChange}
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                  required
+                  placeholder="English"
+                  className={`w-full border ${fieldErrors.originalLanguage ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
                 />
+                {fieldErrors.originalLanguage && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.originalLanguage}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                Image Path (e.g., /movie-images/poster.jpg) *
+                Movie Poster <span className="text-red-500">*</span>
               </label>
+              <p className="text-xs text-gray-500 mb-2">Upload an image (max 5MB, JPG/PNG)</p>
               <input
-                type="text"
-                name="movieImage"
-                value={formData.movieImage}
-                onChange={handleChange}
-                className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
-                placeholder="/movie-images/poster.jpg"
-                required
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className={`w-full border ${fieldErrors.image ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
               />
+              {fieldErrors.image && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.image}</p>
+              )}
+              {imagePreview && (
+                <div className="mt-3">
+                  <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-48 h-auto rounded-lg border border-[#D1D9E0]"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">

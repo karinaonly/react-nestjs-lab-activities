@@ -5,6 +5,8 @@ import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
 import MoviesPage from './pages/MoviesPage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import AdminAddMoviePage from './pages/AdminAddMoviePage';
+import UserManagementPage from './pages/UserManagementPage';
+import UserProfilePage from './pages/UserProfilePage';
 import Login from './auth/login';
 import Signup from './auth/signup';
 import ForgotPassword from './auth/forgotpassword';
@@ -26,6 +28,22 @@ function App() {
               <AdminRoute>
                 <AdminAddMoviePage />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <UserManagementPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <UserProfilePage />
+              </PrivateRoute>
             }
           />
         </Routes>

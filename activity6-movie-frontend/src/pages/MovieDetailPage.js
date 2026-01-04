@@ -1,10 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaStar } from 'react-icons/fa';
-import { useQueryClient } from '@tanstack/react-query';
+import { FaStar, FaTrash, FaEdit } from 'react-icons/fa';
 import Nav from '../components/Nav';
-import { useMovieDetail, useMovieById, useAllMovies } from '../hooks/useMovieDetail';
+import { useMovieDetail, useMovieById } from '../hooks/useMovieDetail';
 import { useAuth } from '../context/AuthContext';
+import { 
+  getMovieReviews, 
+  createReview, 
+  deleteReview, 
+  updateReview 
+} from '../service/reviewsService';
 
 const starValues = [1, 2, 3, 4, 5];
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -12,58 +17,113 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 function MovieDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
-  const queryClient = useQueryClient();
-  const { data: movie, isLoading, error } = useMovieById(id);
-  
-  // Prefetch all movies list for instant back navigation
-  useEffect(() => {
-    queryClient.prefetchQuery({
-      queryKey: ['allMovies'],
-      staleTime: 1000 * 60 * 5,
-    });
-  }, [queryClient]);
-  
-  const {
-    userRating,
-    setUserRating,
-    userReview,
-    setUserReview,
-    activeTab,
-    infoRef,
-    reviewsRef,
-    carouselRef,
-    handleTabClick,
-    handlePrevReview,
-    handleNextReview,
-  } = useMovieDetail();
+  const { isLoggedIn, user } = useAuth();
 
-  // Inject scrollbar styles only once
-  useEffect(() => {
-    const styles = `
-      .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-      }
-      .carousel-smooth {
-        scroll-behavior: smooth;
-        scroll-padding: 0;
-      }
-      .carousel-smooth * {
-        scroll-behavior: smooth;
-      }
-    `;
+  const { data: movie, isLoading } = useMovieById(id);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState('');
+  const [editingReview, setEditingReview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-    if (!document.head.querySelector('style[data-carousel]')) {
-      const styleSheet = document.createElement('style');
-      styleSheet.textContent = styles;
-      styleSheet.setAttribute('data-carousel', 'true');
-      document.head.appendChild(styleSheet);
+  const { infoRef, reviewsRef } = useMovieDetail();
+
+  // Fetch reviews when component mounts or movie changes
+  useEffect(() => {
+    if (id) {
+      const fetchReviews = async () => {
+        try {
+          setLoadingReviews(true);
+          const data = await getMovieReviews(id);
+          setReviews(data);
+        } catch (err) {
+          console.error('Error loading reviews:', err);
+        } finally {
+          setLoadingReviews(false);
+        }
+      };
+      fetchReviews();
     }
-  }, []);
+  }, [id]);
+
+  const loadReviews = async () => {
+    try {
+      setLoadingReviews(true);
+      const data = await getMovieReviews(id);
+      setReviews(data);
+    } catch (err) {
+      console.error('Error loading reviews:', err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (userRating === 0) {
+      setError('Please select a rating');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      if (editingReview) {
+        await updateReview(editingReview.id, {
+          rating: userRating,
+          comment: userComment,
+        });
+        setEditingReview(null);
+      } else {
+        await createReview({
+          movieId: parseInt(id),
+          rating: userRating,
+          comment: userComment,
+        });
+      }
+
+      setUserRating(0);
+      setUserComment('');
+      await loadReviews();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      await deleteReview(reviewId);
+      await loadReviews();
+    } catch (err) {
+      alert('Failed to delete review');
+    }
+  };
+
+  const handleEditReview = (review) => {
+    setEditingReview(review);
+    setUserRating(review.rating);
+    setUserComment(review.comment || '');
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingReview(null);
+    setUserRating(0);
+    setUserComment('');
+    setError('');
+  };
+
+  const userReview = reviews.find(r => r.userId === user?.id);
 
   if (isLoading) {
     return (
@@ -81,9 +141,9 @@ function MovieDetailPage() {
       <div className="min-h-screen bg-[#F5F7FA]">
         <Nav />
         <div className="max-w-5xl mx-auto p-6">
-          <p className="text-lg font-semibold">{isLoading ? 'Loading...' : 'Movie not found.'}</p>
+          <p className="text-lg font-semibold">Movie not found.</p>
           <button
-            className="mt-4 px-4 py-2 rounded bg-[#2FBB73] text-white text-sm font-semibold hover:bg-[#28a966]"
+            className="mt-4 px-4 py-2 rounded bg-[#2FBB73] text-white text-sm font-semibold"
             onClick={() => navigate('/movies')}
           >
             Back to Movies
@@ -98,160 +158,179 @@ function MovieDetailPage() {
       <Nav />
 
       <div className="max-w-6xl mx-auto px-6 pt-6">
-        <div className="mb-4">
-          <button
-            className="px-4 py-2 rounded border border-[#D1D9E0] bg-white text-sm font-semibold text-[#4B5563] hover:bg-[#E5E7EB]"
-            onClick={() => navigate(-1)}
-          >
-            &lt; Back
-          </button>
-        </div>
+        <button
+          className="mb-4 px-4 py-2 rounded border bg-white text-sm font-semibold"
+          onClick={() => navigate('/movies')}
+        >
+          &lt; Back
+        </button>
 
-        {/* Hero */}
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-3">
             <img
               src={`${API_URL}${movie.movieImage}`}
-              alt={`${movie.title} poster`}
-              className="w-full h-[260px] object-cover rounded-lg shadow-sm border border-[#D1D9E0]"
-              loading="eager"
+              alt={movie.title}
+              loading="lazy"
+              className="w-full h-[260px] object-cover rounded-lg border"
             />
           </div>
-          <div className="col-span-9 bg-white rounded-lg shadow-sm border border-[#D1D9E0] p-4">
-            <div className="flex items-center gap-3 text-lg font-semibold">
+
+          <div className="col-span-9 bg-white rounded-lg border p-4">
+            <h1 className="text-2xl font-bold mb-2">{movie.title}</h1>
+            
+            <div className="flex items-center gap-2 text-lg font-semibold">
               <FaStar className="text-[#f0b90b]" />
-              <span>{movie.rating} Rating</span>
+              <span>
+                {movie.averageRating > 0 
+                  ? movie.averageRating.toFixed(1) 
+                  : 'No ratings yet'}
+              </span>
+              {movie.totalReviews > 0 && (
+                <span className="text-sm text-gray-500 font-normal">
+                  ({movie.totalReviews} {movie.totalReviews === 1 ? 'review' : 'reviews'})
+                </span>
+              )}
             </div>
-            <div className="flex gap-4 text-xs text-[#6B7280] mt-2">
+
+            <div className="flex gap-3 text-xs text-gray-500 mt-2">
               <span>{movie.genre}</span>
               <span>•</span>
               <span>{movie.releaseDate}</span>
             </div>
+
             <div className="mt-4">
-              <h3 className="text-sm font-semibold mb-2">Synopsis</h3>
-              <p className="text-xs text-[#6B7280] leading-5">
+              <h3 className="text-sm font-semibold mb-1">Synopsis</h3>
+              <p className="text-xs text-gray-600 leading-5">
                 {movie.description}
               </p>
             </div>
           </div>
         </div>
 
-        <h2 className="mt-5 text-base font-semibold">Movie Info</h2>
+        <h2 className="mt-6 text-base font-semibold">Movie Info</h2>
 
-        {/* Movie info card */}
-        <div ref={infoRef} className="bg-white border border-[#D1D9E0] rounded-lg mt-4 overflow-hidden">
-          <div className="divide-y divide-[#E5E7EB] text-sm text-[#6B7280]">
-            <DetailRow label="Producer" value={movie.producer} />
-            <DetailRow label="Director" value={movie.director} />
-            <DetailRow label="Genre" value={movie.genre} />
-            <DetailRow label="Original Language" value={movie.originalLanguage} />
-          </div>
+        <div
+          ref={infoRef}
+          className="bg-white border rounded-lg mt-3 divide-y text-sm text-gray-600"
+        >
+          <DetailRow label="Producer" value={movie.producer} />
+          <DetailRow label="Director" value={movie.director} />
+          <DetailRow label="Genre" value={movie.genre} />
+          <DetailRow label="Original Language" value={movie.originalLanguage} />
         </div>
 
-        {/* Audience reviews */}
         <div ref={reviewsRef} className="mt-8">
-          <h2 className="text-sm font-semibold mb-4">Audience Reviews</h2>
-          {movie.audienceReviews && movie.audienceReviews.length > 0 ? (
-            <div className="relative group">
-              {/* Left Arrow */}
-              <button
-                onClick={handlePrevReview}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 -ml-6 p-2 bg-[#2FBB73] text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#28a966]"
-                aria-label="Previous reviews"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+          <h2 className="text-lg font-semibold mb-3">Audience Reviews</h2>
 
-              {/* Carousel Container */}
-              <div
-                ref={carouselRef}
-                className="flex gap-4 overflow-x-auto scrollbar-hide carousel-smooth"
-                style={{ 
-                  scrollBehavior: 'smooth'
-                }}
-              >
-                {movie.audienceReviews.map((review) => (
-                  <div key={review.id} className="flex-shrink-0 w-72">
-                    <ReviewCard rating={review.rating} body={review.body} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Right Arrow */}
-              <button
-                onClick={handleNextReview}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 -mr-6 p-2 bg-[#2FBB73] text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-[#28a966]"
-                aria-label="Next reviews"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+          {loadingReviews ? (
+            <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
+              Loading reviews...
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  currentUserId={user?.id}
+                  isAdmin={user?.role === 'admin'}
+                  onEdit={handleEditReview}
+                  onDelete={handleDeleteReview}
+                />
+              ))}
             </div>
           ) : (
-            <div className="bg-white border border-[#D1D9E0] rounded-lg p-8 text-center">
-              <p className="text-[#6B7280] text-sm">No reviews yet</p>
-              <p className="text-xs text-[#9CA3AF] mt-2">Be the first to share your thoughts about this movie!</p>
+            <div className="bg-white border rounded-lg p-6 text-center text-sm text-gray-500">
+              No reviews yet. Be the first to review!
             </div>
           )}
         </div>
 
-        {/* Rating form */}
-        <div className="bg-white border border-[#D1D9E0] rounded-lg mt-8 p-6 max-w-2xl mx-auto shadow-sm">
+        <div className="bg-white border rounded-lg mt-8 p-6 max-w-2xl mx-auto">
           {!isLoggedIn ? (
             <div className="text-center">
-              <p className="text-lg font-semibold text-[#4B5563] mb-4">Login to Rate This Movie</p>
+              <p className="font-semibold mb-3">Login to rate this movie</p>
               <button
                 onClick={() => navigate('/login')}
-                className="px-6 py-3 bg-[#2FBB73] text-white rounded-lg font-semibold hover:bg-[#28a966]"
+                className="px-5 py-2 bg-[#2FBB73] text-white rounded hover:bg-[#27a365]"
               >
                 Go to Login
               </button>
             </div>
+          ) : userReview && !editingReview ? (
+            <div className="text-center">
+              <p className="font-semibold mb-3">You have already reviewed this movie</p>
+              <button
+                onClick={() => handleEditReview(userReview)}
+                className="px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Edit Your Review
+              </button>
+            </div>
           ) : (
-            <>
-              <h3 className="text-base font-semibold">{movie.title}</h3>
-              <p className="text-xs text-[#6B7280] mt-1">My Rating</p>
+            <form onSubmit={handleSubmitReview}>
+              <h3 className="font-semibold mb-3">
+                {editingReview ? 'Edit Your Review' : 'Rate this Movie'}
+              </h3>
 
-              <div className="mt-4">
-                <p className="text-sm font-semibold">What Did You Think Of It?</p>
-                <p className="text-xs text-[#6B7280] mt-1">Pick a star rating.</p>
-                <div className="mt-3 border border-[#D1D9E0] rounded-lg px-6 py-3 flex flex-col items-center gap-2">
-                  <div className="flex gap-2 text-xl text-[#f0b90b]">
-                    {starValues.map((value) => (
-                      <button
-                        key={value}
-                        className="focus:outline-none"
-                        aria-label={`Rate ${value} star${value > 1 ? 's' : ''}`}
-                        onClick={() => setUserRating(value)}
-                      >
-                        <FaStar className={value <= userRating ? 'text-[#f0b90b]' : 'text-[#D1D5DB]'} />
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-xs text-[#6B7280]">What Did You Think Of It?</span>
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+                  {error}
                 </div>
+              )}
+
+              <div className="flex gap-2 mt-3 text-2xl">
+                {starValues.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setUserRating(value)}
+                    className="hover:scale-110 transition-transform"
+                  >
+                    <FaStar
+                      className={
+                        value <= userRating
+                          ? 'text-[#f0b90b]'
+                          : 'text-gray-300'
+                      }
+                    />
+                  </button>
+                ))}
               </div>
 
-              <div className="mt-5">
-                <textarea
-                  className="w-full border border-[#D1D9E0] rounded-lg p-3 text-sm focus:ring-1 focus:ring-[#2FBB73] focus:outline-none"
-                  rows="3"
-                  placeholder="Write your review..."
-                  value={userReview}
-                  onChange={(e) => setUserReview(e.target.value)}
-                />
-              </div>
+              <textarea
+                className="w-full border rounded p-3 text-sm mt-4 focus:outline-none focus:ring-2 focus:ring-[#2FBB73]"
+                rows="4"
+                placeholder="Write your review... (optional)"
+                value={userComment}
+                onChange={(e) => setUserComment(e.target.value)}
+              />
 
               <div className="flex gap-3 mt-4">
-                <button className="px-4 py-2 rounded bg-[#2FBB73] text-white text-sm font-semibold hover:bg-[#28a966]">Post Rating</button>
-                <button className="px-4 py-2 rounded bg-[#E7F6EE] text-[#2FBB73] text-sm font-semibold border border-[#2FBB73]">
-                  Write a Review
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2 bg-[#2FBB73] text-white rounded hover:bg-[#27a365] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting 
+                    ? 'Submitting...' 
+                    : editingReview 
+                      ? 'Update Review' 
+                      : 'Post Review'
+                  }
                 </button>
+                
+                {editingReview && (
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
-            </>
+            </form>
           )}
         </div>
       </div>
@@ -262,21 +341,68 @@ function MovieDetailPage() {
 function DetailRow({ label, value }) {
   return (
     <div className="grid grid-cols-3 px-4 py-3">
-      <div className="text-xs text-[#9CA3AF] font-medium">{label}</div>
-      <div className="col-span-2 text-xs text-[#4B5563]">{value}</div>
+      <span className="text-xs text-gray-400">{label}</span>
+      <span className="col-span-2 text-xs">{value}</span>
     </div>
   );
 }
 
-function ReviewCard({ rating, body }) {
+function ReviewCard({ review, currentUserId, isAdmin, onEdit, onDelete }) {
+  const canModify = currentUserId === review.userId || isAdmin;
+  const isOwner = currentUserId === review.userId;
+
   return (
-    <div className="bg-white border border-[#D1D9E0] rounded-lg p-3 text-xs text-[#4B5563] shadow-sm">
-      <div className="flex items-center gap-1 text-[#f0b90b] mb-2">
-        {starValues.map((value) => (
-          <FaStar key={value} className={value <= rating ? 'text-[#f0b90b]' : 'text-[#D1D5DB]'} />
-        ))}
+    <div className="bg-white border rounded-lg p-4">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <p className="font-semibold text-sm">
+            {review.user?.username || review.user?.email || 'Anonymous'}
+          </p>
+          <p className="text-xs text-gray-500">
+            {new Date(review.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 text-[#f0b90b]">
+            {starValues.map((v) => (
+              <FaStar
+                key={v}
+                className={v <= review.rating ? 'text-[#f0b90b]' : 'text-gray-300'}
+              />
+            ))}
+          </div>
+          
+          {canModify && (
+            <div className="flex gap-2 ml-2">
+              {isOwner && (
+                <button
+                  onClick={() => onEdit(review)}
+                  className="text-blue-500 hover:text-blue-700"
+                  title="Edit review"
+                >
+                  <FaEdit />
+                </button>
+              )}
+              <button
+                onClick={() => onDelete(review.id)}
+                className="text-red-500 hover:text-red-700"
+                title="Delete review"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      <p className="leading-5">{body}</p>
+      
+      {review.comment && (
+        <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
+      )}
     </div>
   );
 }
