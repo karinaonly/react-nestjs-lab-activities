@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Nav from '../components/Nav';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { getAllUsers, getUserStats, createUser, deleteUser, updateUser } from '../service/usersService';
 
 const UserManagementPage = () => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -77,14 +82,21 @@ const UserManagementPage = () => {
   };
 
   const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        fetchUsers();
-        fetchStats();
-      } catch (err) {
-        setError('Failed to delete user');
-      }
+    setUserToDelete(userId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteUser(userToDelete);
+      fetchUsers();
+      fetchStats();
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
+    } catch (err) {
+      setError('Failed to delete user');
+      setShowDeleteConfirm(false);
+      setUserToDelete(null);
     }
   };
 
@@ -117,27 +129,44 @@ const UserManagementPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-main)' }}>
         <Nav />
         <div className="flex justify-center items-center h-96">
-          <div className="text-xl">Loading...</div>
+          <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Nav />
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-main)' }}>
+      <Nav
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search users..."
+      />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <button
-            onClick={openCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-          >
-            Add New User
-          </button>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>User Management</h1>
+          <div className="flex items-center gap-3">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-3 py-2 rounded-md border text-sm"
+              style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+            >
+              <option value="all">All Roles</option>
+              <option value="admin">Admins</option>
+              <option value="user">Users</option>
+            </select>
+            <button
+              onClick={openCreateModal}
+              className="text-white px-6 py-2 rounded-lg transition-colors"
+              style={{ backgroundColor: 'var(--accent-color)' }}
+            >
+              Add New User
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -149,57 +178,69 @@ const UserManagementPage = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-gray-500 text-sm">Total Users</h3>
-              <p className="text-3xl font-bold">{stats.total}</p>
+            <div className="p-6 rounded-lg shadow" style={{ backgroundColor: 'var(--bg-card)' }}>
+              <h3 className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Users</h3>
+              <p className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{stats.total}</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-gray-500 text-sm">Admins</h3>
-              <p className="text-3xl font-bold text-purple-600">{stats.admins}</p>
+            <div className="p-6 rounded-lg shadow" style={{ backgroundColor: 'var(--bg-card)' }}>
+              <h3 className="text-sm" style={{ color: 'var(--text-muted)' }}>Admins</h3>
+              <p className="text-3xl font-bold" style={{ color: 'var(--accent-color)' }}>{stats.admins}</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-gray-500 text-sm">Regular Users</h3>
+            <div className="p-6 rounded-lg shadow" style={{ backgroundColor: 'var(--bg-card)' }}>
+              <h3 className="text-sm" style={{ color: 'var(--text-muted)' }}>Regular Users</h3>
               <p className="text-3xl font-bold text-green-600">{stats.users}</p>
             </div>
           </div>
         )}
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="rounded-lg shadow overflow-hidden" style={{ backgroundColor: 'var(--bg-card)' }}>
+          <table className="min-w-full divide-y" style={{ borderColor: 'var(--border-color)' }}>
+            <thead style={{ backgroundColor: 'var(--bg-secondary)' }}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   ID
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   Username
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   Created At
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+            <tbody className="divide-y" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+              {users
+                .filter((u) => {
+                  const matchesSearch = searchTerm.trim()
+                    ? (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (u.username && u.username.toLowerCase().includes(searchTerm.toLowerCase()))
+                    : true;
+                  const matchesRole = roleFilter === 'all' ? true : u.role === roleFilter;
+                  return matchesSearch && matchesRole;
+                })
+                .map((user) => (
                 <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-primary)' }}>
                     {user.id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-primary)' }}>
                     {user.email}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-primary)' }}>
                     {user.username || '-'}
+                    {currentUser?.id === user.id && (
+                      <span className="ml-2 text-xs font-semibold" style={{ color: 'var(--accent-color)' }}>(You)</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -212,19 +253,26 @@ const UserManagementPage = () => {
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--text-muted)' }}>
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                       onClick={() => handleEdit(user)}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="mr-4 hover:underline"
+                      style={{ color: 'var(--accent-color)' }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
+                      disabled={currentUser?.id === user.id}
+                      className={`hover:underline ${
+                        currentUser?.id === user.id 
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : 'text-red-600 hover:text-red-900'
+                      }`}
+                      title={currentUser?.id === user.id ? 'Cannot delete your own account' : ''}
                     >
                       Delete
                     </button>
@@ -237,57 +285,77 @@ const UserManagementPage = () => {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="fixed inset-0 overflow-y-auto h-full w-full z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
               <div className="mt-3">
-                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                <h3 className="text-lg font-medium leading-6 mb-4" style={{ color: 'var(--text-primary)' }}>
                   {editingUser ? 'Edit User' : 'Create New User'}
                 </h3>
                 <form onSubmit={handleSubmit}>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                       Email
                     </label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                      style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        borderColor: 'var(--border-color)',
+                        color: 'var(--text-primary)'
+                      }}
                       required
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                       Username
                     </label>
                     <input
                       type="text"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                      style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        borderColor: 'var(--border-color)',
+                        color: 'var(--text-primary)'
+                      }}
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                       Password {editingUser && '(leave blank to keep current)'}
                     </label>
                     <input
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                      style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        borderColor: 'var(--border-color)',
+                        color: 'var(--text-primary)'
+                      }}
                       required={!editingUser}
                       minLength={6}
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                       Role
                     </label>
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                      style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        borderColor: 'var(--border-color)',
+                        color: 'var(--text-primary)'
+                      }}
                     >
                       <option value="user">User (Rater)</option>
                       <option value="admin">Admin</option>
@@ -300,13 +368,19 @@ const UserManagementPage = () => {
                         setShowModal(false);
                         resetForm();
                       }}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                      className="px-4 py-2 rounded-md transition-colors"
+                      style={{ 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        color: 'var(--text-muted)',
+                        border: '1px solid var(--border-color)'
+                      }}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className="px-4 py-2 text-white rounded-md transition-colors"
+                      style={{ backgroundColor: 'var(--accent-color)' }}
                     >
                       {editingUser ? 'Update' : 'Create'}
                     </button>
@@ -316,6 +390,19 @@ const UserManagementPage = () => {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => {
+            setShowDeleteConfirm(false);
+            setUserToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+          title="Delete User"
+          message="Are you sure you want to delete this user? This action cannot be undone."
+          confirmText="Delete"
+          variant="danger"
+        />
       </div>
     </div>
   );

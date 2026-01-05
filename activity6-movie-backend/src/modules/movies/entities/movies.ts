@@ -25,11 +25,11 @@ export class Movie{
     @Column()
     genre: string;
 
-    @Column({ nullable: true })
+    @Column()
     releaseDate: number;
 
-    @Column({ type: "varchar", nullable: true })
-    movieImage?: string;
+    @Column({ type: "varchar"})
+    movieImage: string;
 
     @CreateDateColumn()
     createdAt: Date;

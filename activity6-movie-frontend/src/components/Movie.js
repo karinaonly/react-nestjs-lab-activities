@@ -10,7 +10,8 @@ function Movie({ movie }) {
   return (
     <Link
       to={`/movies/${movie.movieId}`}
-      className='m-5 border border-[#D1D9E0] bg-[#FAFBFC] cursor-pointer rounded-lg p-3 w-fit flex flex-col items-center hover:shadow-sm'
+      className='m-5 border cursor-pointer rounded-lg p-3 w-fit flex flex-col items-center hover:shadow-sm'
+      style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-card)' }}
     >
       <img 
         className="w-40 h-48 rounded-lg shadow-lg object-cover" 
@@ -20,18 +21,18 @@ function Movie({ movie }) {
       />
       <div className='flex items-center mt-2 gap-2'>
         <FaStar className='text-[#f0b90b]' />
-        <h3 className='text-sm font-medium mt-1'>
+        <h3 className='text-sm font-medium mt-1' style={{ color: 'var(--text-primary)' }}>
           {movie.averageRating > 0 
             ? movie.averageRating.toFixed(1) 
             : 'No ratings'}
         </h3>
         {movie.totalReviews > 0 && (
-          <span className='text-xs text-gray-500'>
+          <span className='text-xs' style={{ color: 'var(--text-muted)' }}>
             ({movie.totalReviews})
           </span>
         )}
       </div>
-      <h3 className='text-sm font-semibold mt-1 text-center'>{movie.title}</h3>
+      <h3 className='text-sm font-semibold mt-1 text-center' style={{ color: 'var(--text-primary)' }}>{movie.title}</h3>
     </Link>
   );
 }

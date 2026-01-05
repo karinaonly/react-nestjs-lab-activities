@@ -1,13 +1,24 @@
 import React, { memo, useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import profileLogo from '../assets/profileicon.png'
-import { FiSearch } from 'react-icons/fi'
+import { FiSearch, FiSun, FiMoon } from 'react-icons/fi'
+import { FaFilm, FaUsers } from 'react-icons/fa'
 
-function Nav() {
+function Nav({
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = 'Search Movies...'
+}) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout, isAdmin } = useAuth()
+  const { isDarkMode, toggleTheme } = useTheme()
   const [showDropdown, setShowDropdown] = useState(false)
+  const isAdminPage = location.pathname.startsWith('/admin')
+  const isMoviesPage = location.pathname.includes('/admin/movies')
+  const isUsersPage = location.pathname.includes('/admin/users')
 
   const handleLogout = useCallback(() => {
     logout()
@@ -19,13 +30,22 @@ function Nav() {
     navigate('/login')
   }, [navigate])
 
+  const [internalSearch, setInternalSearch] = useState('')
+  const currentSearch = searchValue !== undefined ? searchValue : internalSearch
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value
+    setInternalSearch(value)
+    if (onSearchChange) onSearchChange(value)
+  }
+
   return (
-    <div className="flex items-center justify-between bg-[#FAFBFC] border border-[#D1D9E0] px-4 py-2">
+    <div className="flex items-center justify-between bg-[var(--bg-card)] border-b border-[var(--border-color)] px-4 py-2">
       
       {/* LOGO (Link is faster than navigate) */}
       <Link
-        to="/movies"
-        className="ml-1 text-base font-semibold hover:text-[#2FBB73]"
+        to={isAdmin ? "/admin/movies" : "/movies"}
+        className="ml-1 text-base font-semibold text-[var(--text-primary)] hover:text-[var(--accent-color)]"
       >
         Movies Website
       </Link>
@@ -34,10 +54,12 @@ function Nav() {
         
         {/* SEARCH (no logic = cheap render) */}
         <div className="relative flex items-center">
-          <FiSearch className="absolute left-[25px] text-[#666] text-[16px]" />
+          <FiSearch className="absolute left-[25px] text-[var(--text-muted)] text-[16px]" />
           <input
-            className="ml-5 pr-[10px] pl-[30px] h-[35px] text-sm rounded-[5px] border border-[#D1D9E0] outline-none w-[300px]"
-            placeholder="Search Movies..."
+            className="ml-5 pr-[10px] pl-[30px] h-[35px] text-sm rounded-[5px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] outline-none w-[300px] placeholder:text-[var(--text-muted)]"
+            placeholder={searchPlaceholder}
+            value={currentSearch}
+            onChange={handleSearchChange}
           />
         </div>
 
@@ -45,21 +67,40 @@ function Nav() {
           
           {/* ADMIN BUTTONS */}
           {isAdmin && (
-            <>
+            <div className="flex gap-2">
               <Link
-                to="/admin/movies/add"
-                className="px-3 py-1 text-sm font-semibold text-white bg-[#2FBB73] rounded hover:bg-[#28a966]"
+                to="/admin/movies"
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  isMoviesPage
+                    ? 'bg-[var(--accent-color)] text-white shadow-md'
+                    : 'text-[var(--accent-color)] bg-[var(--bg-secondary)] hover:bg-[var(--border-color)]'
+                }`}
               >
-                + Add Movie
+                <FaFilm size={16} />
+                Movies
               </Link>
               <Link
                 to="/admin/users"
-                className="px-3 py-1 text-sm font-semibold text-white bg-purple-600 rounded hover:bg-purple-700"
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                  isUsersPage
+                    ? 'bg-[var(--accent-color)] text-white shadow-md'
+                    : 'text-[var(--accent-color)] bg-[var(--bg-secondary)] hover:bg-[var(--border-color)]'
+                }`}
               >
-                Manage Users
+                <FaUsers size={16} />
+                Users
               </Link>
-            </>
+            </div>
           )}
+
+          {/* THEME TOGGLE */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-primary)]"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+          </button>
 
           {/* USER */}
           {user ? (
@@ -69,24 +110,24 @@ function Nav() {
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 <img className="w-[20px] mr-[10px]" src={profileLogo} alt="profile-logo" />
-                <h3 className="text-base font-semibold">
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">
                   {user.username || user.email}
                 </h3>
               </div>
               
               {/* Dropdown Menu */}
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-card)] rounded-md shadow-lg border border-[var(--border-color)] z-50">
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
                     onClick={() => setShowDropdown(false)}
                   >
                     My Profile
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                    className="w-full text-left block px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-t border-[var(--border-color)]"
                   >
                     Logout
                   </button>
@@ -99,7 +140,7 @@ function Nav() {
               onClick={handleLogin}
             >
               <img className="w-[20px] mr-[10px]" src={profileLogo} alt="profile-logo" />
-              <h3 className="text-base font-semibold">Login</h3>
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">Login</h3>
             </div>
           )}
 

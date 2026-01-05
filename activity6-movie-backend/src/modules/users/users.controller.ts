@@ -45,8 +45,14 @@ export class UsersController {
   @Get('profile')
   async getProfile(@Request() req) {
     try {
-      return await this.usersService.findOne(req.user.sub);
+      console.log('Profile request for user:', req.user);
+      const userId = req.user.sub || req.user.id;
+      console.log('Fetching profile for user ID:', userId);
+      const profile = await this.usersService.findOne(userId);
+      console.log('Profile fetched:', profile);
+      return profile;
     } catch (error) {
+      console.error('Profile fetch error:', error);
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }

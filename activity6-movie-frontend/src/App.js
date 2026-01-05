@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { PrivateRoute, AdminRoute } from './components/ProtectedRoute';
 import MoviesPage from './pages/MoviesPage';
 import MovieDetailPage from './pages/MovieDetailPage';
+import AdminMoviesPage from './pages/AdminMoviesPage';
 import AdminAddMoviePage from './pages/AdminAddMoviePage';
 import UserManagementPage from './pages/UserManagementPage';
 import UserProfilePage from './pages/UserProfilePage';
@@ -22,6 +23,14 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/movies" element={<MoviesPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
+          <Route
+            path="/admin/movies"
+            element={
+              <AdminRoute>
+                <AdminMoviesPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="/admin/movies/add"
             element={

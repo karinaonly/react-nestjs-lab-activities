@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
+import AlertDialog from '../components/AlertDialog';
 import axiosInstance from '../service/axiosInstance';
 
 function AdminAddMoviePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editMovie = location.state?.mode === 'edit' ? location.state.movie : null;
+
+  // Genre options
+  const genreOptions = [
+    'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
+    'Documentary', 'Drama', 'Family', 'Fantasy', 'Film Noir', 'History',
+    'Horror', 'Musical', 'Mystery', 'Romance', 'Sci-Fi', 'Sport',
+    'Thriller', 'War', 'Western'
+  ];
+
+  // Language options
+  const languageOptions = [
+    'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
+    'Russian', 'Japanese', 'Korean', 'Chinese', 'Hindi', 'Arabic',
+    'Turkish', 'Dutch', 'Swedish', 'Norwegian', 'Danish', 'Finnish',
+    'Polish', 'Czech', 'Greek', 'Hebrew', 'Thai', 'Vietnamese',
+    'Indonesian', 'Tagalog', 'Swahili', 'Other'
+  ];
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -21,6 +44,22 @@ function AdminAddMoviePage() {
     rating: 8.0,
   });
 
+  useEffect(() => {
+    if (editMovie) {
+      setFormData({
+        title: editMovie.title || '',
+        description: editMovie.description || '',
+        genre: editMovie.genre || '',
+        director: editMovie.director || '',
+        producer: editMovie.producer || '',
+        originalLanguage: editMovie.originalLanguage || '',
+        releaseDate: editMovie.releaseDate || new Date().getFullYear(),
+        rating: editMovie.rating || 8.0,
+      });
+      setImagePreview(editMovie.movieImage ? `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}${editMovie.movieImage}` : null);
+    }
+  }, [editMovie]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -31,17 +70,14 @@ function AdminAddMoviePage() {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    
     if (!file) return;
 
-    // Check file type
     if (!file.type.startsWith('image/')) {
       setError('Please select a valid image file');
       return;
     }
 
-    // Check file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       setError('Image size must be less than 5MB');
       return;
@@ -49,12 +85,9 @@ function AdminAddMoviePage() {
 
     setError('');
     setImageFile(file);
-    
-    // Create preview
+
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
+    reader.onloadend = () => setImagePreview(reader.result);
     reader.readAsDataURL(file);
   };
 
@@ -63,7 +96,6 @@ function AdminAddMoviePage() {
     setError('');
     setFieldErrors({});
 
-    // Validate all required fields
     const errors = {};
     if (!formData.title.trim()) errors.title = 'Title is required';
     if (!formData.genre.trim()) errors.genre = 'Genre is required';
@@ -75,9 +107,8 @@ function AdminAddMoviePage() {
     if (!formData.rating || formData.rating < 0 || formData.rating > 10) {
       errors.rating = 'Rating must be between 0 and 10';
     }
-    if (!imageFile) errors.image = 'Movie poster is required';
+    if (!editMovie && !imageFile) errors.image = 'Movie poster is required';
 
-    // If there are errors, show them and don't submit
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setError('Please fill in all required fields');
@@ -96,42 +127,68 @@ function AdminAddMoviePage() {
       submitData.append('originalLanguage', formData.originalLanguage);
       submitData.append('releaseDate', formData.releaseDate);
       submitData.append('rating', formData.rating);
-      submitData.append('image', imageFile);
+      if (imageFile) {
+        submitData.append('image', imageFile);
+      }
 
-      await axiosInstance.post('/movies/create', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      alert('Movie added successfully!');
-      navigate('/movies');
+      if (editMovie) {
+        await axiosInstance.put(`/movies/update/${editMovie.movieId}`, submitData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setSuccessMessage('Movie updated successfully!');
+      } else {
+        await axiosInstance.post('/movies/create', submitData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setSuccessMessage('Movie added successfully!');
+      }
+
+      setShowSuccessAlert(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add movie');
+      setError(err.response?.data?.message || `Failed to ${editMovie ? 'update' : 'add'} movie`);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAlertClose = () => {
+    setShowSuccessAlert(false);
+    if (editMovie) {
+      navigate(`/movies/${editMovie.movieId}`);
+    } else {
+      navigate('/movies');
+    }
+  };
+
+  const inputClass = (hasError) =>
+    `w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 ${hasError ? 'border-red-500' : ''}`;
+
+  const inputStyle = (hasError) => ({
+    backgroundColor: 'var(--bg-secondary)',
+    borderColor: hasError ? '#ef4444' : 'var(--border-color)',
+    color: 'var(--text-primary)',
+  });
+
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-main)' }}>
       <Nav />
       <div className="max-w-2xl mx-auto px-6 pt-6 pb-10">
         <div className="mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded border border-[#D1D9E0] bg-white text-sm font-semibold text-[#4B5563] hover:bg-[#E5E7EB]"
+            className="px-3 py-2 text-sm font-semibold rounded hover:opacity-90"
+            style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
           >
             &lt; Back
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-[#D1D9E0] p-8">
-          <h2 className="text-2xl font-semibold mb-2">Add New Movie</h2>
-          <p className="text-sm text-gray-500 mb-6">Fields marked with <span className="text-red-500">*</span> are required</p>
+        <div className="rounded-xl shadow-sm p-8" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{editMovie ? 'Edit Movie' : 'Add New Movie'}</h1>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Fields marked with <span style={{ color: '#ef4444' }}>*</span> are required</p>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: '#ef4444' }}>
               {error}
             </div>
           )}
@@ -139,8 +196,8 @@ function AdminAddMoviePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Title <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Title <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -148,34 +205,39 @@ function AdminAddMoviePage() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="Enter movie title"
-                  className={`w-full border ${fieldErrors.title ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                  className={inputClass(fieldErrors.title)}
+                  style={inputStyle(fieldErrors.title)}
                 />
                 {fieldErrors.title && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.title}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.title}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Genre <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Genre <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="genre"
                   value={formData.genre}
                   onChange={handleChange}
-                  placeholder="e.g., Action, Drama, Comedy"
-                  className={`w-full border ${fieldErrors.genre ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
-                />
+                  className={inputClass(fieldErrors.genre)}
+                  style={inputStyle(fieldErrors.genre)}
+                >
+                  <option value="">Select genre...</option>
+                  {genreOptions.map((genre) => (
+                    <option key={genre} value={genre}>{genre}</option>
+                  ))}
+                </select>
                 {fieldErrors.genre && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.genre}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.genre}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                Description <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Description <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <textarea
                 name="description"
@@ -183,17 +245,18 @@ function AdminAddMoviePage() {
                 onChange={handleChange}
                 rows="4"
                 placeholder="Enter movie description or synopsis"
-                className={`w-full border ${fieldErrors.description ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                className={inputClass(fieldErrors.description)}
+                style={inputStyle(fieldErrors.description)}
               />
               {fieldErrors.description && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.description}</p>
+                <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.description}</p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Director <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Director <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -201,16 +264,17 @@ function AdminAddMoviePage() {
                   value={formData.director}
                   onChange={handleChange}
                   placeholder="Director name"
-                  className={`w-full border ${fieldErrors.director ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                  className={inputClass(fieldErrors.director)}
+                  style={inputStyle(fieldErrors.director)}
                 />
                 {fieldErrors.director && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.director}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.director}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Producer <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Producer <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -218,18 +282,19 @@ function AdminAddMoviePage() {
                   value={formData.producer}
                   onChange={handleChange}
                   placeholder="Producer name"
-                  className={`w-full border ${fieldErrors.producer ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                  className={inputClass(fieldErrors.producer)}
+                  style={inputStyle(fieldErrors.producer)}
                 />
                 {fieldErrors.producer && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.producer}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.producer}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Release Year <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Release Year <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="number"
@@ -239,72 +304,59 @@ function AdminAddMoviePage() {
                   placeholder="2024"
                   min="1800"
                   max="2100"
-                  className={`w-full border ${fieldErrors.releaseDate ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                  className={inputClass(fieldErrors.releaseDate)}
+                  style={inputStyle(fieldErrors.releaseDate)}
                 />
                 {fieldErrors.releaseDate && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.releaseDate}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.releaseDate}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Rating (0-10) <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Language <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <input
-                  type="number"
-                  name="rating"
-                  step="0.1"
-                  min="0"
-                  max="10"
-                  value={formData.rating}
-                  onChange={handleChange}
-                  placeholder="8.5"
-                  className={`w-full border ${fieldErrors.rating ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
-                />
-                {fieldErrors.rating && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.rating}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                  Language <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
+                <select
                   name="originalLanguage"
                   value={formData.originalLanguage}
                   onChange={handleChange}
-                  placeholder="English"
-                  className={`w-full border ${fieldErrors.originalLanguage ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
-                />
+                  className={inputClass(fieldErrors.originalLanguage)}
+                  style={inputStyle(fieldErrors.originalLanguage)}
+                >
+                  <option value="">Select language...</option>
+                  {languageOptions.map((language) => (
+                    <option key={language} value={language}>{language}</option>
+                  ))}
+                </select>
                 {fieldErrors.originalLanguage && (
-                  <p className="text-red-500 text-xs mt-1">{fieldErrors.originalLanguage}</p>
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.originalLanguage}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#4B5563] mb-2">
-                Movie Poster <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Movie Poster <span style={{ color: '#ef4444' }}>*</span>
               </label>
-              <p className="text-xs text-gray-500 mb-2">Upload an image (max 5MB, JPG/PNG)</p>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Upload an image (max 5MB, JPG/PNG)</p>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className={`w-full border ${fieldErrors.image ? 'border-red-500' : 'border-[#D1D9E0]'} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#2FBB73]`}
+                className={inputClass(fieldErrors.image)}
+                style={inputStyle(fieldErrors.image)}
               />
               {fieldErrors.image && (
-                <p className="text-red-500 text-xs mt-1">{fieldErrors.image}</p>
+                <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{fieldErrors.image}</p>
               )}
               {imagePreview && (
                 <div className="mt-3">
-                  <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                  <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Preview:</p>
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-48 h-auto rounded-lg border border-[#D1D9E0]"
+                    className="w-48 h-auto rounded-lg border"
+                    style={{ borderColor: 'var(--border-color)' }}
                   />
                 </div>
               )}
@@ -314,14 +366,16 @@ function AdminAddMoviePage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-[#2FBB73] text-white py-3 rounded-lg font-semibold hover:bg-[#28a966] disabled:opacity-50"
+                className="flex-1 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent-color)' }}
               >
-                {loading ? 'Adding...' : 'Add Movie'}
+                {loading ? (editMovie ? 'Updating...' : 'Adding...') : editMovie ? 'Update Movie' : 'Add Movie'}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="flex-1 border border-[#D1D9E0] text-[#4B5563] py-3 rounded-lg font-semibold hover:bg-[#F5F7FA]"
+                className="flex-1 rounded-lg font-semibold"
+                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.75rem' }}
               >
                 Cancel
               </button>
@@ -329,6 +383,14 @@ function AdminAddMoviePage() {
           </form>
         </div>
       </div>
+
+      <AlertDialog
+        isOpen={showSuccessAlert}
+        onClose={handleAlertClose}
+        title="Success"
+        message={successMessage}
+        variant="success"
+      />
     </div>
   );
 }

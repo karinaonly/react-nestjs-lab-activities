@@ -97,8 +97,6 @@ export const useMovieById = (id) => {
     queryKey: ['movie', id],
     queryFn: () => moviesService.getMovieById(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
 
     // 🚀 INSTANT PAGE LOAD (cache reuse)
     initialData: () => {
@@ -107,6 +105,21 @@ export const useMovieById = (id) => {
     },
   });
 };
+
+export const useCreateMovie = () => {
+  return useQuery({
+    queryKey: ['createMovie'],
+    queryFn: moviesService.createMovie,
+  });
+}
+
+export const useEditMovie = (id) => {
+  return useQuery({
+    queryKey: ['movie', id],
+    queryFn: () => moviesService.updateMovie(id),
+    enabled: !!id,
+  });
+}
 
 /* ============================
    PREFETCH HELPER (OPTIONAL)
@@ -117,8 +130,7 @@ export const usePrefetchMovie = () => {
   return (id) => {
     queryClient.prefetchQuery({
       queryKey: ['movie', id],
-      queryFn: () => moviesService.getMovieById(id),
-      staleTime: 1000 * 60 * 5,
+      queryFn: () => moviesService.getMovieById(id)
     });
   };
 };

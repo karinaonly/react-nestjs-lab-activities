@@ -1,14 +1,65 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav';
 import GenreDropdown from '../components/GenreDropdown';
 import SortDropdown from '../components/SortDropdown';
 import Movie from '../components/Movie';
 import NextPage from '../components/NextPage';
 import { useAllMovies, usePrefetchMovie } from '../hooks/useMovieDetail';
+import { useAuth } from '../context/AuthContext';
 
 function MoviesPage() {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const { data: allMovies, isLoading, isError } = useAllMovies();
   const prefetchMovie = usePrefetchMovie();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedSort, setSelectedSort] = useState('SORT');
+
+  // Redirect admins to admin dashboard
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin/movies', { replace: true });
+    }
+  }, [isAdmin, navigate]);
+
+  const filteredMovies = useMemo(() => {
+    if (!allMovies) return [];
+
+    let list = [...allMovies];
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter((m) =>
+        m.title?.toLowerCase().includes(q) || m.genre?.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedGenre && selectedGenre !== 'All' && selectedGenre !== 'GENRE') {
+      const g = selectedGenre.toLowerCase();
+      list = list.filter((m) => m.genre?.toLowerCase().includes(g));
+    }
+
+    switch (selectedSort) {
+      case 'Rating':
+        list.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+        break;
+      case 'Release Date':
+        list.sort((a, b) => (b.releaseDate || 0) - (a.releaseDate || 0));
+        break;
+      case 'Popularity':
+        list.sort((a, b) => (b.totalReviews || 0) - (a.totalReviews || 0));
+        break;
+      case 'Title':
+        list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        break;
+      default:
+        break;
+    }
+
+    return list;
+  }, [allMovies, searchTerm, selectedGenre, selectedSort]);
 
   if (isLoading) {
     return (
@@ -28,7 +79,7 @@ function MoviesPage() {
     );
   }
 
-  if (!allMovies || allMovies.length === 0) {
+  if (!filteredMovies || filteredMovies.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-lg font-semibold">No movies found.</p>
@@ -37,22 +88,26 @@ function MoviesPage() {
   }
 
   return (
-    <div>
-      <Nav />
+    <div style={{ backgroundColor: 'var(--bg-main)', minHeight: '100vh' }}>
+      <Nav
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search movies..."
+      />
 
       <div className="moviesContainer">
-        <h3 className="text-base font-semibold m-5">
+        <h3 className="text-base font-semibold m-5" style={{ color: 'var(--text-primary)' }}>
           TOP MOVIES IN 2025
         </h3>
 
         <div className="filterContainer flex gap-4 m-7">
-          <GenreDropdown />
-          <SortDropdown />
+          <GenreDropdown selectedGenre={selectedGenre} onSelect={setSelectedGenre} />
+          <SortDropdown selectedSort={selectedSort} onSelect={setSelectedSort} />
         </div>
 
         {/* 🔥 Optimized Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-10">
-          {allMovies.map((movie) => (
+          {filteredMovies.map((movie) => (
             <Movie
               key={movie.movieId}
               movie={movie}
