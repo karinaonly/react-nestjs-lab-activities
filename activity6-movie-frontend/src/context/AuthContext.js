@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
@@ -13,28 +13,35 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+      }
     }
     setIsLoading(false);
   }, []);
 
-  const login = (userData, accessToken) => {
+  const login = useCallback((userData, accessToken) => {
     setUser(userData);
     setToken(accessToken);
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
-  };
+    localStorage.removeItem('rememberMe');
+  }, []);
 
   const isAdmin = user?.role === 'admin';
-  const isLoggedIn = !!token;
+  const isLoggedIn = !!token && !!user;
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAdmin, isLoggedIn, isLoading }}>

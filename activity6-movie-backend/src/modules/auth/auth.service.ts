@@ -22,12 +22,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      return null;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      return null;
     }
 
     const token = this.jwtService.sign({
@@ -50,7 +50,7 @@ export class AuthService {
   async register(email: string, password: string, role: 'user' | 'admin' = 'user', username?: string) {
     const existingUser = await this.usersRepo.findOne({ where: { email } });
     if (existingUser) {
-      throw new Error('User already exists');
+      return null;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

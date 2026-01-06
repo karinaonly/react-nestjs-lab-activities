@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -7,11 +7,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
-    try {
-      return await this.authService.login(body.email, body.password);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
-    }
+    return await this.authService.login(body.email, body.password);
   }
 
   @Post('register')
@@ -23,15 +19,11 @@ export class AuthController {
       username?: string 
     },
   ) {
-    try {
-      return await this.authService.register(
-        body.email,
-        body.password,
-        body.role || 'user',
-        body.username,
-      );
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+    return await this.authService.register(
+      body.email,
+      body.password,
+      body.role || 'user',
+      body.username,
+    );
   }
 }
