@@ -11,12 +11,14 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 
+@ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
@@ -24,6 +26,11 @@ export class UsersController {
 
   @Get()
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all users', description: 'Retrieve all users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'List of users retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   async findAll() {
     try {
       return await this.usersService.findAll();
@@ -34,6 +41,11 @@ export class UsersController {
 
   @Get('stats')
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user statistics', description: 'Get user count statistics (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User statistics retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   async getStats() {
     try {
       return await this.usersService.getStats();
@@ -43,6 +55,11 @@ export class UsersController {
   }
 
   @Get('profile')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get current user profile', description: 'Retrieve the profile of the authenticated user' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 404, description: 'User profile not found' })
   async getProfile(@Request() req) {
     try {
       console.log('Profile request for user:', req.user);
@@ -58,6 +75,13 @@ export class UsersController {
   }
 
   @Get(':id')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user by ID', description: 'Retrieve a specific user (own profile or Admin)' })
+  @ApiParam({ name: 'id', description: 'User ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only view own profile or Admin' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async findOne(@Param('id') id: string, @Request() req) {
     try {
       const userId = parseInt(id);
@@ -78,6 +102,12 @@ export class UsersController {
 
   @Post()
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Create new user', description: 'Create a new user (Admin only)' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   async create(@Body() createUserDto: CreateUserDto) {
     try {
       return await this.usersService.create(createUserDto);
@@ -87,6 +117,14 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update user', description: 'Update a user (own profile or Admin)' })
+  @ApiParam({ name: 'id', description: 'User ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only update own profile or Admin' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -119,6 +157,13 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(AdminGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete user', description: 'Delete a user (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID', example: 1 })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async remove(@Param('id') id: string) {
     try {
       await this.usersService.remove(parseInt(id));

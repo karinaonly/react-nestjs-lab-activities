@@ -45,23 +45,25 @@ function Nav({
       {/* LOGO (Link is faster than navigate) */}
       <Link
         to={isAdmin ? "/admin/movies" : "/movies"}
-        className="ml-1 text-base font-semibold text-[var(--text-primary)] hover:text-[var(--accent-color)]"
+        className="whitespace-nowrap text-base font-semibold text-[var(--text-primary)] hover:text-[var(--accent-color)]"
       >
         Movies Website
       </Link>
 
-      <div className="flex items-center justify-between w-[85%] gap-4">
+      <div className={`flex items-center ${isAdminPage ? 'justify-end' : 'justify-between'} ${isAdminPage ? 'w-full' : 'w-[85%]'} gap-4`}>
         
-        {/* SEARCH (no logic = cheap render) */}
-        <div className="relative flex items-center">
-          <FiSearch className="absolute left-[25px] text-[var(--text-muted)] text-[16px]" />
-          <input
-            className="ml-5 pr-[10px] pl-[30px] h-[35px] text-sm rounded-[5px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] outline-none w-[300px] placeholder:text-[var(--text-muted)]"
-            placeholder={searchPlaceholder}
-            value={currentSearch}
-            onChange={handleSearchChange}
-          />
-        </div>
+        {/* SEARCH (hidden on admin pages) */}
+        {!isAdminPage && (
+          <div className="relative flex items-center">
+            <FiSearch className="absolute left-[25px] text-[var(--text-muted)] text-[16px]" />
+            <input
+              className="ml-5 pr-[10px] pl-[30px] h-[35px] text-sm rounded-[5px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] outline-none w-[300px] placeholder:text-[var(--text-muted)]"
+              placeholder={searchPlaceholder}
+              value={currentSearch}
+              onChange={handleSearchChange}
+            />
+          </div>
+        )}
 
         <div className="flex items-center mr-[30px] gap-4">
           

@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateMovieDto } from './dto/create.movie.dto';
 import { UpdateMovieDto } from './dto/update.movie.dto';
 import { ReviewsService } from '../reviews/reviews.service';
+import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
 
 @Injectable()
 export class MoviesService {
@@ -47,16 +49,59 @@ export class MoviesService {
     }
 
     async createMovie(createMovieDto: CreateMovieDto){
-        const newMovie = this.moviesRepo.create(createMovieDto);
+        // Remove undefined values
+        const cleanData = Object.keys(createMovieDto).reduce((acc, key) => {
+            if (createMovieDto[key] !== undefined) {
+                acc[key] = createMovieDto[key];
+            }
+            return acc;
+        }, {});
+        
+        const newMovie = this.moviesRepo.create(cleanData);
         return this.moviesRepo.save(newMovie);
     }
 
     async updateMovie(movieId: number, updateMovieDto: UpdateMovieDto){
-        await this.moviesRepo.update(movieId, updateMovieDto);
+        // Remove undefined values and fields that don't belong to Movie entity
+        const allowedFields = ['title', 'description', 'genre', 'producer', 'director', 'originalLanguage', 'releaseDate', 'movieImage'];
+        const cleanData = Object.keys(updateMovieDto).reduce((acc, key) => {
+            if (updateMovieDto[key] !== undefined && allowedFields.includes(key)) {
+                acc[key] = updateMovieDto[key];
+            }
+            return acc;
+        }, {});
+        
+        await this.moviesRepo.update(movieId, cleanData);
         return this.getMovieById(movieId);
     }
 
     async deleteMovie(movieId: number){
         return this.moviesRepo.delete(movieId);
+    }
+
+    async deleteMovieImage(movieId: number) {
+        const movie = await this.moviesRepo.findOneBy({ movieId });
+        
+        if (!movie || !movie.movieImage) {
+            return { message: 'Movie or image not found' };
+        }
+
+        // Extract filename from path and construct full file path
+        const filename = movie.movieImage.replace('/movie-images/', '');
+        const imagePath = join(process.cwd(), 'movie-images', filename);
+
+        // Delete file from disk if it exists
+        if (existsSync(imagePath)) {
+            try {
+                unlinkSync(imagePath);
+            } catch (err) {
+                console.error('Error deleting file:', err);
+            }
+        }
+
+        // Update database to remove movieImage reference
+        await this.moviesRepo.update(movieId, { movieImage: null } as any);
+
+        return { message: 'Image deleted successfully' };
     }
 }

@@ -40,6 +40,14 @@ function App() {
             }
           />
           <Route
+            path="/admin/movies/edit/:id"
+            element={
+              <AdminRoute>
+                <AdminAddMoviePage />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/admin/users"
             element={
               <AdminRoute>

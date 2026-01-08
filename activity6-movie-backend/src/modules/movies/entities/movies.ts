@@ -28,7 +28,7 @@ export class Movie{
     @Column()
     releaseDate: number;
 
-    @Column({ type: "varchar"})
+    @Column({ type: "varchar", nullable: true, default: null })
     movieImage: string;
 
     @CreateDateColumn()

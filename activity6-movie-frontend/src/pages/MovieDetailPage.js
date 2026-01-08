@@ -276,23 +276,61 @@ function MovieDetailPage() {
           )}
         </div>
 
-        <div className="border rounded-lg mt-8 p-6 max-w-2xl mx-auto" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
+        <div className="border rounded-lg mt-8 p-6 max-w-2xl mx-auto relative" style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
           {!isLoggedIn ? (
-            <div className="text-center">
-              <p className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Login to rate this movie</p>
-              <button
-                onClick={() => navigate('/login')}
-                className="px-5 py-2 text-white rounded"
-                style={{ backgroundColor: 'var(--accent-color)' }}
-              >
-                Go to Login
-              </button>
-            </div>
+            <>
+              {/* Disabled Preview Form - Background Shadow */}
+              <div className="w-full pointer-events-none opacity-20 absolute inset-0 p-6">
+                <h3 className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Rate this Movie</h3>
+
+                <div className="flex gap-2 mt-3 text-2xl">
+                  {starValues.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled
+                      className="cursor-not-allowed"
+                    >
+                      <FaStar className="text-gray-300" />
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  className="w-full border rounded p-3 text-sm mt-4 focus:outline-none"
+                  style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  rows="4"
+                  placeholder="Write your review... (optional)"
+                  disabled
+                />
+
+                <button
+                  type="button"
+                  disabled
+                  className="px-6 py-2 text-white rounded mt-4 cursor-not-allowed"
+                  style={{ backgroundColor: 'var(--accent-color)' }}
+                >
+                  Post Review
+                </button>
+              </div>
+
+              {/* Login Prompt - Foreground */}
+              <div className="relative z-10 text-center">
+                <p className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Login to rate this movie</p>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="px-6 py-2 text-white rounded font-semibold"
+                  style={{ backgroundColor: 'var(--accent-color)' }}
+                >
+                  Go to Login
+                </button>
+              </div>
+            </>
           ) : user?.role === 'admin' ? (
             <div className="text-center space-y-3">
               <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Admins manage movies instead of rating them.</p>
               <button
-                onClick={() => navigate('/admin/movies/add', { state: { mode: 'edit', movie } })}
+                onClick={() => navigate(`/admin/movies/edit/${movie.movieId}`, { state: { mode: 'edit', movie } })}
                 className="px-5 py-2 text-white rounded"
                 style={{ backgroundColor: 'var(--accent-color)' }}
               >

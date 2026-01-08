@@ -12,7 +12,7 @@ function AdminMovieCard({ movie, onDelete }) {
   const [showAlert, setShowAlert] = useState(false);
 
   const handleEdit = () => {
-    navigate('/admin/movies/add', { state: { mode: 'edit', movie } });
+    navigate(`/admin/movies/edit/${movie.movieId}`, { state: { mode: 'edit', movie } });
   };
 
   const handleDelete = async () => {
