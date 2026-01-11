@@ -1,70 +1,66 @@
-# Getting Started with Create React App
+# Movie Recommendation System - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An interactive React frontend for the Movie Recommendation System, providing a seamless user experience for browsing, rating, and managing movies.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Browsing:** Dynamic movie list with real-time search, genre filtering, and sorting (Rating, Release Date, etc.).
+- **User Roles:** Distinct experiences for regular Users and Administrators.
+- **Admin Dashboard:** Tools for adding/editing movies and managing user accounts.
+- **Reviews:** Interactive rating system where users can leave feedback on movies.
+- **Responsive Design:** Built with Tailwind CSS for a consistent look across devices.
+- **Dark Mode:** Supports both light and dark themes using CSS variables.
+- **Protected Routes:** Secure navigation ensuring only authenticated users can access specific pages.
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
+- **Library:** [React](https://reactjs.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Data Fetching:** Axios & TanStack Query (React Query)
+- **Icons:** React Icons
+- **State Management:** React Context API
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (v16 or higher)
+- [Movie Backend](activity6-movie-backend) running correctly.
+
+## Installation
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd activity6-movie-frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables. Create a `.env` file in the root of the frontend folder:
+   ```env
+   REACT_APP_API_URL=http://localhost:3001
+   ```
+
+## Running the App
+
+```bash
+# development
+$ npm start
+```
+
+Runs the app in the development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Project Structure
 
-### `npm test`
+- `src/auth`: Authentication pages (Login, Signup, Forgot Password).
+- `src/components`: Reusable UI components (Nav, Dropdowns, Pagination).
+- `src/context`: Authentication and Theme providers.
+- `src/pages`: Main view components (MoviesPage, AdminDashboard, etc.).
+- `src/service`: API abstraction layers using Axios instance.
+- `src/hooks`: Custom hooks for data fetching and logic.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## License
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is [MIT licensed](LICENSE).
