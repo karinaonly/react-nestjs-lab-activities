@@ -280,7 +280,7 @@ function MovieDetailPage() {
           {!isLoggedIn ? (
             <>
               {/* Disabled Preview Form - Background Shadow */}
-              <div className="w-full pointer-events-none opacity-20 absolute inset-0 p-6">
+              <div className="w-full pointer-events-none opacity-20">
                 <h3 className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Rate this Movie</h3>
 
                 <div className="flex gap-2 mt-3 text-2xl">
@@ -315,7 +315,7 @@ function MovieDetailPage() {
               </div>
 
               {/* Login Prompt - Foreground */}
-              <div className="relative z-10 text-center">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center">
                 <p className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Login to rate this movie</p>
                 <button
                   onClick={() => navigate('/login')}

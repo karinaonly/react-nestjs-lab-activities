@@ -149,28 +149,6 @@ const Login = () => {
                 {error}
               </div>
             )}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <input 
-                  type="checkbox" 
-                  id="remember" 
-                  className="mr-2" 
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={loading}
-                />
-                <label htmlFor="remember" className="text-sm cursor-pointer" style={{ color: 'var(--text-primary)' }}>Remember me</label>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate("/forgot-password")}
-                className="text-sm hover:underline"
-                style={{ color: 'var(--accent-color)' }}
-                disabled={loading}
-              >
-                Forgot password?
-              </button>
-            </div>
             <button
               className="w-full text-white py-2 rounded-md hover:opacity-90 transition duration-200 disabled:opacity-50"
               style={{ backgroundColor: 'var(--accent-color)' }}

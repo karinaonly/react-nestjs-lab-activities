@@ -16,6 +16,8 @@ function MoviesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedSort, setSelectedSort] = useState('SORT');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Redirect admins to admin dashboard
   useEffect(() => {
@@ -23,6 +25,11 @@ function MoviesPage() {
       navigate('/admin/movies', { replace: true });
     }
   }, [isAdmin, navigate]);
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedGenre, selectedSort]);
 
   const filteredMovies = useMemo(() => {
     if (!allMovies) return [];
@@ -61,31 +68,11 @@ function MoviesPage() {
     return list;
   }, [allMovies, searchTerm, selectedGenre, selectedSort]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg font-semibold">Loading movies...</p>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg font-semibold text-red-600">
-          Error loading movies.
-        </p>
-      </div>
-    );
-  }
-
-  if (!filteredMovies || filteredMovies.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg font-semibold">No movies found.</p>
-      </div>
-    );
-  }
+  const totalPages = Math.ceil(filteredMovies.length / itemsPerPage);
+  const paginatedMovies = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredMovies.slice(start, start + itemsPerPage);
+  }, [filteredMovies, currentPage]);
 
   return (
     <div style={{ backgroundColor: 'var(--bg-main)', minHeight: '100vh' }}>
@@ -95,29 +82,55 @@ function MoviesPage() {
         searchPlaceholder="Search movies..."
       />
 
-      <div className="moviesContainer">
-        <h3 className="text-base font-semibold m-5" style={{ color: 'var(--text-primary)' }}>
-          TOP MOVIES IN 2025
-        </h3>
-
-        <div className="filterContainer flex gap-4 m-7">
-          <GenreDropdown selectedGenre={selectedGenre} onSelect={setSelectedGenre} />
-          <SortDropdown selectedSort={selectedSort} onSelect={setSelectedSort} />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Loading movies...</p>
         </div>
-
-        {/* 🔥 Optimized Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-10">
-          {filteredMovies.map((movie) => (
-            <Movie
-              key={movie.movieId}
-              movie={movie}
-              onHover={() => prefetchMovie(movie.movieId)}
-            />
-          ))}
+      ) : isError ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-lg font-semibold text-red-600">Error loading movies.</p>
         </div>
-      </div>
+      ) : (
+        <div className="moviesContainer">
 
-      <NextPage />
+          <div className="filterContainer flex gap-4 m-7">
+            <GenreDropdown selectedGenre={selectedGenre} onSelect={setSelectedGenre} />
+            <SortDropdown selectedSort={selectedSort} onSelect={setSelectedSort} />
+          </div>
+
+          {filteredMovies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>No movies found.</p>
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="mt-2 text-sm underline"
+                style={{ color: 'var(--accent-color)' }}
+              >
+                Clear search
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* 🔥 Optimized Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-10">
+                {paginatedMovies.map((movie) => (
+                  <Movie
+                    key={movie.movieId}
+                    movie={movie}
+                    onHover={() => prefetchMovie(movie.movieId)}
+                  />
+                ))}
+              </div>
+
+              <NextPage 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

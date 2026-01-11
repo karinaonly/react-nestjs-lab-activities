@@ -13,7 +13,7 @@ function SortDropdown({ selectedSort = 'SORT', onSelect }) {
     return (
         <div className='relative inline-block'>
             <button 
-                className='px-5 py-2 border rounded cursor-pointer text-sm font-medium transition-all duration-300 min-w-[120px] text-left flex items-center justify-between gap-2'
+                className='px-5 py-2 border rounded-md cursor-pointer text-sm font-medium transition-all duration-300 min-w-[140px] text-left flex items-center justify-between gap-2 shadow-sm'
                 style={{ 
                     borderColor: 'var(--border-color)', 
                     backgroundColor: 'var(--bg-card)', 
@@ -21,22 +21,41 @@ function SortDropdown({ selectedSort = 'SORT', onSelect }) {
                 }}
                 onClick={() => setSortOpen(!sortOpen)}
             >
-                {selectedSort}
+                <span className="truncate">{selectedSort === 'SORT' ? 'Sort By' : selectedSort}</span>
                 <FiChevronDown className={`transition-transform duration-300 text-base flex-shrink-0 ${sortOpen ? 'rotate-180' : ''}`} />
             </button>
+
             {sortOpen && (
-                <div className='absolute top-full left-0 border border-t-0 rounded-b min-w-[120px] shadow-md z-10 overflow-hidden' style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}>
-                {sortOptions.map((option) => (
+                <>
+                    {/* Backdrop to close on click outside */}
+                    <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)}></div>
+                    
                     <div 
-                    key={option}
-                    className='px-5 py-2.5 cursor-pointer text-sm transition-colors duration-200'
-                    style={{ color: 'var(--text-primary)' }}
-                    onClick={() => handleSortSelect(option)}
+                        className='absolute top-full left-0 mt-1 border rounded-lg shadow-xl z-20 w-[180px] p-2' 
+                        style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)' }}
                     >
-                    {option}
+                        <div className="flex flex-col gap-1">
+                            {sortOptions.map((option) => (
+                                <div 
+                                    key={option}
+                                    className={`px-3 py-2 cursor-pointer text-xs rounded-md transition-all duration-200 flex items-center ${
+                                        selectedSort === option 
+                                        ? 'font-bold' 
+                                        : 'hover:bg-[var(--bg-secondary)]'
+                                    }`}
+                                    style={{ 
+                                        color: selectedSort === option ? 'var(--accent-color)' : 'var(--text-primary)',
+                                        backgroundColor: selectedSort === option ? 'rgba(var(--accent-rgb), 0.1)' : 'transparent' 
+                                    }}
+                                    onClick={() => handleSortSelect(option)}
+                                >
+                                    {option}
+                                    {selectedSort === option && <div className="ml-auto w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-color)' }}></div>}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                ))}
-                </div>
+                </>
             )}
         </div>
     )
