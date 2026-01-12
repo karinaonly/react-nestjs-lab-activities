@@ -65,7 +65,3 @@ $ npm run start:prod
 
 Once the server is running, you can access the interactive Swagger documentation at:
 [http://localhost:3001/api/docs](http://localhost:3001/api/docs)
-
-## License
-
-This project is [MIT licensed](LICENSE).

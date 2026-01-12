@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Nav from '../components/Nav';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { getAllUsers, getUserStats, createUser, deleteUser, updateUser } from '../service/usersService';
+import { getAllUsers, getUserStats, createUser, archiveUser, updateUser } from '../service/usersService';
 
 const UserManagementPage = () => {
   const navigate = useNavigate();
@@ -14,8 +14,8 @@ const UserManagementPage = () => {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [userToArchive, setUserToArchive] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [formData, setFormData] = useState({
@@ -81,22 +81,22 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleDelete = async (userId) => {
-    setUserToDelete(userId);
-    setShowDeleteConfirm(true);
+  const handleArchive = async (userId) => {
+    setUserToArchive(userId);
+    setShowArchiveConfirm(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmArchive = async () => {
     try {
-      await deleteUser(userToDelete);
+      await archiveUser(userToArchive);
       fetchUsers();
       fetchStats();
-      setShowDeleteConfirm(false);
-      setUserToDelete(null);
+      setShowArchiveConfirm(false);
+      setUserToArchive(null);
     } catch (err) {
-      setError('Failed to delete user');
-      setShowDeleteConfirm(false);
-      setUserToDelete(null);
+      setError('Failed to archive user');
+      setShowArchiveConfirm(false);
+      setUserToArchive(null);
     }
   };
 
@@ -265,16 +265,16 @@ const UserManagementPage = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(user.id)}
+                      onClick={() => handleArchive(user.id)}
                       disabled={currentUser?.id === user.id}
                       className={`hover:underline ${
                         currentUser?.id === user.id 
                           ? 'text-gray-400 cursor-not-allowed' 
                           : 'text-red-600 hover:text-red-900'
                       }`}
-                      title={currentUser?.id === user.id ? 'Cannot delete your own account' : ''}
+                      title={currentUser?.id === user.id ? 'Cannot archive your own account' : ''}
                     >
-                      Delete
+                      Archive
                     </button>
                   </td>
                 </tr>
@@ -392,15 +392,15 @@ const UserManagementPage = () => {
         )}
 
         <ConfirmDialog
-          isOpen={showDeleteConfirm}
+          isOpen={showArchiveConfirm}
           onClose={() => {
-            setShowDeleteConfirm(false);
-            setUserToDelete(null);
+            setShowArchiveConfirm(false);
+            setUserToArchive(null);
           }}
-          onConfirm={confirmDelete}
-          title="Delete User"
-          message="Are you sure you want to delete this user? This action cannot be undone."
-          confirmText="Delete"
+          onConfirm={confirmArchive}
+          title="Archive User"
+          message="Are you sure you want to archive this user? This action cannot be undone."
+          confirmText="Archive"
           variant="danger"
         />
       </div>

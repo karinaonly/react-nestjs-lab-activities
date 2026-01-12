@@ -36,8 +36,8 @@ export const updateUser = async (id, userData) => {
   return response.data;
 };
 
-// Delete user (Admin only)
-export const deleteUser = async (id) => {
+// Archive user (Admin only)
+export const archiveUser = async (id) => {
   const response = await axiosInstance.delete(`/users/${id}`);
   return response.data;
 };

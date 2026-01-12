@@ -37,6 +37,32 @@ Configure your `.env` file (see frontend README for details) and start the app:
 npm start
 ```
 
+### 4. Run Frontend & Backend Together
+In the root folder, there are helper scripts in `package.json`:
+
+```json
+{
+  "scripts": {
+    "start:frontend": "npm start --prefix activity6-movie-frontend",
+    "start:backend": "npm run start:dev --prefix activity6-movie-backend",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  }
+}
+```
+
+First, install the root dependencies (for `concurrently`):
+```bash
+npm install
+```
+
+Then start both servers with one command:
+```bash
+npm run dev
+```
+
+- Backend runs on [http://localhost:3001](http://localhost:3001)
+- Frontend runs on [http://localhost:3000](http://localhost:3000)
+
 ## Key Features
 
 - **Authentication:** JWT-based secure login and registration.
@@ -48,6 +74,3 @@ npm start
 
 ## API Documentation
 The backend provides a Swagger UI at `http://localhost:3001/api/docs` when running in development mode.
-
-## License
-MIT

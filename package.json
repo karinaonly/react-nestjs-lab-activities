@@ -2,9 +2,9 @@
   "name": "lab-activity-6",
   "private": true,
   "scripts": {
-    "frontend": "npm start --prefix activity6-movie-frontend",
-    "backend": "npm run start:dev --prefix activity6-movie-backend",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+    "start:frontend": "npm start --prefix activity6-movie-frontend",
+    "start:backend": "npm run start:dev --prefix activity6-movie-backend",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

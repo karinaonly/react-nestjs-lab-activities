@@ -60,7 +60,3 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 - `src/pages`: Main view components (MoviesPage, AdminDashboard, etc.).
 - `src/service`: API abstraction layers using Axios instance.
 - `src/hooks`: Custom hooks for data fetching and logic.
-
-## License
-
-This project is [MIT licensed](LICENSE).

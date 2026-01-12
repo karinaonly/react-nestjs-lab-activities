@@ -16,8 +16,8 @@ export class AuthService {
     // Try to find user by email or username
     const user = await this.usersRepo.findOne({ 
       where: [
-        { email },
-        { username: email }
+        { email, isArchived: false },
+        { username: email, isArchived: false }
       ]
     });
 

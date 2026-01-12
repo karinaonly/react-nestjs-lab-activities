@@ -15,18 +15,19 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({
-      select: ['id', 'email', 'username', 'role', 'createdAt'],
+      where: { isArchived: false },
+      select: ['id', 'email', 'username', 'role', 'createdAt', 'isArchived'],
     });
   }
 
   async findOne(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({
-      where: { id },
-      select: ['id', 'email', 'username', 'role', 'createdAt'],
+      where: { id, isArchived: false },
+      select: ['id', 'email', 'username', 'role', 'createdAt', 'isArchived'],
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`User with ID ${id} not found or is archived`);
     }
 
     return user;
@@ -81,15 +82,16 @@ export class UsersService {
 
   async remove(id: number): Promise<void> {
     const user = await this.findOne(id);
-    await this.usersRepository.remove(user);
+    user.isArchived = true;
+    await this.usersRepository.save(user);
   }
 
   async countByRole(role: 'user' | 'admin'): Promise<number> {
-    return this.usersRepository.count({ where: { role } });
+    return this.usersRepository.count({ where: { role, isArchived: false } });
   }
 
   async getStats() {
-    const totalUsers = await this.usersRepository.count();
+    const totalUsers = await this.usersRepository.count({ where: { isArchived: false } });
     const adminCount = await this.countByRole('admin');
     const userCount = await this.countByRole('user');
 

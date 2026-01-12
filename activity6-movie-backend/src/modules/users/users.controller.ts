@@ -158,16 +158,16 @@ export class UsersController {
   @Delete(':id')
   @UseGuards(AdminGuard)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Delete user', description: 'Delete a user (Admin only)' })
+  @ApiOperation({ summary: 'Archive user', description: 'Archive a user (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 200, description: 'User archived successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async remove(@Param('id') id: string) {
     try {
       await this.usersService.remove(parseInt(id));
-      return { message: 'User deleted successfully' };
+      return { message: 'User archived successfully' };
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
