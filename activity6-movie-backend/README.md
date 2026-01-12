@@ -36,17 +36,32 @@ A robust NestJS backend for the Movie Recommendation System, providing a RESTful
    npm install
    ```
 
-3. Configure environment variables. Create a `.env` file in the root of the backend folder:
-   ```env
-   PORT=3001
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=your_password
-   DB_NAME=movie_db
-   DB_SYNC=true
-   JWT_SECRET=your_secret_key
-   ```
+## 2. Configure Database & Environment
+
+The backend uses TypeORM with MySQL. Make sure you have a database created, for example:
+
+- **host**: localhost
+- **port**: 3306
+- **database**: movie_db
+- **user**: e.g. root
+- **password**: your_password
+
+Then configure your connection in the `.env` file (usually something like):
+
+```env
+PORT=3001
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=movie_db
+DB_SYNC=true
+JWT_SECRET=your_jwt_secret
+```
+
+Adjust the actual variable names to match your `database.config.ts` and auth configuration.
+
+The API server will run by default on [http://localhost:3001](http://localhost:3001).
 
 ## Running the App
 

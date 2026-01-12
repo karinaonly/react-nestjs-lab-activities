@@ -15,29 +15,76 @@ Ensure you have a MySQL server running and create a database named `movie_db`:
 CREATE DATABASE movie_db;
 ```
 
-### 2. Backend Setup
+### 2. Configure Database & Environment
+The backend uses TypeORM with MySQL. Make sure you have a database created, for example:
+
+- **host**: localhost
+- **port**: 3306
+- **database**: movie_db
+- **user**: e.g. root
+- **password**: your_password
+
+Then configure your connection in the `.env` file (usually something like):
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=movie_db
+JWT_SECRET=your_jwt_secret
+```
+
+Adjust the actual variable names to match your `database.config.ts` and auth configuration.
+
+The API server will run by default on [http://localhost:3001](http://localhost:3001).
+
+### 3. Backend Setup
 Navigate to the backend folder and install dependencies:
 ```bash
 cd activity6-movie-backend
 npm install
 ```
-Configure your `.env` file (see backend README for details) and start the server:
+
+Start the server:
 ```bash
 npm run start:dev
 ```
 
-### 3. Frontend Setup
-Navigate to the frontend folder and install dependencies:
+### 4. Frontend Setup (React App)
+Frontend folder: `activity6-movie-frontend`
+
 ```bash
 cd activity6-movie-frontend
 npm install
 ```
-Configure your `.env` file (see frontend README for details) and start the app:
+
+#### 4.1 Configure API URL
+The frontend uses an environment variable `REACT_APP_API_URL` to talk to the backend.
+
+Create a `.env` file inside `activity6-movie-frontend` (same level as `package.json`) with:
+
+```env
+REACT_APP_API_URL=http://localhost:3001
+```
+
+If this file is missing, the frontend falls back to `http://localhost:3001` by default.
+
+#### 4.2 Run the Frontend
+From the project root:
 ```bash
+npm run start:frontend
+```
+
+Or inside the frontend folder:
+```bash
+cd activity6-movie-frontend
 npm start
 ```
 
-### 4. Run Frontend & Backend Together
+The React app will start on [http://localhost:3000](http://localhost:3000).
+
+### 5. Run Frontend & Backend Together
 In the root folder, there are helper scripts in `package.json`:
 
 ```json

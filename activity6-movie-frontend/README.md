@@ -37,20 +37,36 @@ An interactive React frontend for the Movie Recommendation System, providing a s
    npm install
    ```
 
-3. Configure environment variables. Create a `.env` file in the root of the frontend folder:
-   ```env
-   REACT_APP_API_URL=http://localhost:3001
-   ```
+## 4. Frontend Setup (React App)
 
-## Running the App
+Frontend folder: `activity6-movie-frontend`
 
-```bash
-# development
-$ npm start
+### 4.1 Configure API URL
+
+The frontend uses an environment variable `REACT_APP_API_URL` to talk to the backend.
+
+Create a `.env` file inside `activity6-movie-frontend` (same level as `package.json`) with:
+
+```env
+REACT_APP_API_URL=http://localhost:3001
 ```
 
-Runs the app in the development mode.
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+If this file is missing, ensure the code points to the correct backend URL.
+
+### 4.2 Run the Frontend
+
+From the project root:
+```bash
+npm run start:frontend
+```
+
+Or inside the frontend folder:
+```bash
+cd activity6-movie-frontend
+npm start
+```
+
+The React app will start on [http://localhost:3000](http://localhost:3000).
 
 ## Project Structure
 
