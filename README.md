@@ -1,4 +1,4 @@
-# Movie Recommendation System (Full Stack)
+# Activity 9 - Movie Rating Web Application
 
 This repository contains a full-stack Movie Recommendation System built with **React** (Frontend) and **NestJS** (Backend). It features user authentication, movie management, and an interactive review system.
 
