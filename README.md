@@ -12,7 +12,7 @@ This repository contains a full-stack Movie Recommendation System built with **R
 ### 1. Database Setup
 Ensure you have a MySQL server running and create a database named `lab_activity_db`:
 ```sql
-CREATE DATABASE movie_db;
+CREATE DATABASE lab_activity_db;
 ```
 
 ### 2. Configure Database & Environment
